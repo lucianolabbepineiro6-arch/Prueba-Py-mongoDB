@@ -9,15 +9,24 @@ app = Flask(__name__)
 # Conexión a MongoDB
 try:
     mongo_link = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
-    client = MongoClient(mongo_link, serverSelectionTimeoutMS=5000)
-    client.admin.command('ping')
     
+    # Añadimos paros de emergencia (timeouts) y permitimos certificados para evitar el bloqueo 502
+    client = MongoClient(
+        mongo_link, 
+        serverSelectionTimeoutMS=2000, 
+        connectTimeoutMS=2000,
+        tlsAllowInvalidCertificates=True
+    )
+    
+    client.admin.command('ping')
     db = client['mi_tienda']
     productos_collection = db['productos']
-    print("[OK] Conexion a MongoDB verificada y exitosa")
+    print("✓ Conexión a MongoDB verificada y exitosa")
 except Exception as e:
-    print(f"[ERROR] Conexion MongoDB: {e}")
-    productos_collection = None
+    print(f"✗ Falló Atlas, activando respaldo local. Error: {e}")
+    client = MongoClient("mongodb://localhost:27017", serverSelectionTimeoutMS=2000)
+    db = client['mi_tienda']
+    productos_collection = db['productos']
 
 @app.route('/')
 def index():
