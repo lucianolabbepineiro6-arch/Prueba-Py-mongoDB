@@ -6,47 +6,52 @@ import os
 
 app = Flask(__name__)
 
-# Conexión a MongoDB corregida leyendo la variable de entorno
+# Conexión a MongoDB
 try:
-    # 1. Intentamos leer la variable segura MONGO_URI de Railway.
-    # Si no existe (en tu PC local), usará tu localhost por defecto.
     mongo_link = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
-    
-    client = MongoClient(mongo_link)
-    
-    # 2. Obligamos a Mongo a responder un "ping" para asegurar de que la contraseña es correcta
+    client = MongoClient(mongo_link, serverSelectionTimeoutMS=5000)
     client.admin.command('ping')
     
     db = client['mi_tienda']
     productos_collection = db['productos']
-    print("✓ Conexión a MongoDB verificada y exitosa")
+    print("[OK] Conexion a MongoDB verificada y exitosa")
 except Exception as e:
-    print(f"✗ Error al conectar a MongoDB: {e}")
+    print(f"[ERROR] Conexion MongoDB: {e}")
+    productos_collection = None
 
 @app.route('/')
 def index():
     """Renderiza la página principal con la lista de productos"""
     try:
+        if productos_collection is None:
+            return render_template('index.html', productos=[])
         productos = list(productos_collection.find())
         return render_template('index.html', productos=productos)
     except Exception as e:
-        print(f"Error al obtener productos: {e}")
+        print(f"[ERROR] obtener productos: {e}")
         return render_template('index.html', productos=[])
 
 @app.route('/crear', methods=['POST'])
 def crear():
     """Inserta un nuevo producto en MongoDB"""
     try:
+        if productos_collection is None:
+            print("[ERROR] Coleccion no disponible")
+            return redirect(url_for('index'))
+            
         nombre = request.form.get('nombre', '').strip()
         precio = request.form.get('precio', '')
         stock = request.form.get('stock', '')
 
-        # Validaciones
+        print(f"[INFO] Recibido: nombre={nombre}, precio={precio}, stock={stock}")
+
         if not nombre:
+            print("[WARN] Nombre vacio")
             return redirect(url_for('index'))
         
         precio = float(precio)
         stock = int(stock)
+        print("[OK] Datos validados")
 
         nuevo_producto = {
             'nombre': nombre,
@@ -56,12 +61,12 @@ def crear():
         }
 
         resultado = productos_collection.insert_one(nuevo_producto)
-        print(f"✓ Producto creado con ID: {resultado.inserted_id}")
+        print(f"[OK] Producto creado: {resultado.inserted_id}")
 
-    except ValueError:
-        print("Error: Precio debe ser un número y Stock debe ser un entero")
+    except ValueError as ve:
+        print(f"[ERROR] Validacion: {ve}")
     except Exception as e:
-        print(f"Error al crear producto: {e}")
+        print(f"[ERROR] Crear producto: {type(e).__name__}: {e}")
 
     return redirect(url_for('index'))
 
@@ -69,9 +74,12 @@ def crear():
 def editar(id):
     """Actualiza un producto existente"""
     try:
-        # Validar que el ID sea un ObjectId válido
+        if productos_collection is None:
+            print("[ERROR] Coleccion no disponible")
+            return redirect(url_for('index'))
+            
         if not ObjectId.is_valid(id):
-            print(f"ID inválido: {id}")
+            print(f"[ERROR] ID invalido: {id}")
             return redirect(url_for('index'))
 
         object_id = ObjectId(id)
@@ -79,8 +87,10 @@ def editar(id):
         precio = request.form.get('precio', '')
         stock = request.form.get('stock', '')
 
-        # Validaciones
+        print(f"[INFO] Editando: {object_id}")
+
         if not nombre:
+            print("[WARN] Nombre vacio")
             return redirect(url_for('index'))
 
         precio = float(precio)
@@ -99,14 +109,14 @@ def editar(id):
         )
 
         if resultado.matched_count > 0:
-            print(f"✓ Producto actualizado: {object_id}")
+            print(f"[OK] Producto actualizado: {object_id}")
         else:
-            print(f"✗ Producto no encontrado: {object_id}")
+            print(f"[WARN] Producto no encontrado: {object_id}")
 
-    except ValueError:
-        print("Error: Precio debe ser un número y Stock debe ser un entero")
+    except ValueError as ve:
+        print(f"[ERROR] Validacion: {ve}")
     except Exception as e:
-        print(f"Error al editar producto: {e}")
+        print(f"[ERROR] Editar producto: {type(e).__name__}: {e}")
 
     return redirect(url_for('index'))
 
@@ -114,24 +124,27 @@ def editar(id):
 def eliminar(id):
     """Elimina un producto por su ObjectId"""
     try:
-        # Validar que el ID sea un ObjectId válido
+        if productos_collection is None:
+            print("[ERROR] Coleccion no disponible")
+            return redirect(url_for('index'))
+            
         if not ObjectId.is_valid(id):
-            print(f"ID inválido: {id}")
+            print(f"[ERROR] ID invalido: {id}")
             return redirect(url_for('index'))
 
         object_id = ObjectId(id)
         resultado = productos_collection.delete_one({'_id': object_id})
 
         if resultado.deleted_count > 0:
-            print(f"✓ Producto eliminado: {object_id}")
+            print(f"[OK] Producto eliminado: {object_id}")
         else:
-            print(f"✗ Producto no encontrado: {object_id}")
+            print(f"[WARN] Producto no encontrado: {object_id}")
 
     except Exception as e:
-        print(f"Error al eliminar producto: {e}")
+        print(f"[ERROR] Eliminar producto: {type(e).__name__}: {e}")
 
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    puerto = int(os.environ.get('PORT', 8080))
-    app.run(debug=True, host='0.0.0.0', port=puerto)
+    puerto = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=puerto)
