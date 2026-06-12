@@ -6,12 +6,20 @@ import os
 
 app = Flask(__name__)
 
-# Conexión a MongoDB
+# Conexión a MongoDB corregida leyendo la variable de entorno
 try:
-    client = MongoClient("MONGO_URI", "mongodb://localhost:27017")
+    # 1. Intentamos leer la variable segura MONGO_URI de Railway.
+    # Si no existe (en tu PC local), usará tu localhost por defecto.
+    mongo_link = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+    
+    client = MongoClient(mongo_link)
+    
+    # 2. Obligamos a Mongo a responder un "ping" para asegurar de que la contraseña es correcta
+    client.admin.command('ping')
+    
     db = client['mi_tienda']
     productos_collection = db['productos']
-    print("✓ Conexión a MongoDB exitosa")
+    print("✓ Conexión a MongoDB verificada y exitosa")
 except Exception as e:
     print(f"✗ Error al conectar a MongoDB: {e}")
 
