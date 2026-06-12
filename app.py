@@ -147,4 +147,4 @@ def eliminar(id):
 
 if __name__ == '__main__':
     puerto = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, host='0.0.0.0', port=puerto)
+    app.run(debug=True, host='0.0.0.0', port=puerto)
