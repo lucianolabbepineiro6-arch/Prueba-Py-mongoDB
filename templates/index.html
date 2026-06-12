@@ -329,10 +329,11 @@
                                         <div class="acciones">
                                             <button class="btn btn-sm btn-edit" data-bs-toggle="modal"
                                                 data-bs-target="#modalEditarProducto"
-                                                onclick="cargarProductoEditar('{{ producto._id }}', '{{ producto.nombre }}', {{ producto.precio }}, {{ producto.stock }})">
+                                                onclick="cargarProductoEditar('{{ producto._id|string }}', '{{ producto.nombre }}', {{ producto.precio }}, {{ producto.stock }})">
                                                 <i class="bi bi-pencil-square"></i> Editar
                                             </button>
-                                            <form action="/eliminar/{{ producto._id }}" method="POST" style="display: inline;">
+                                            
+                                            <form action="/eliminar/{{ producto._id|string }}" method="POST" style="display: inline;">
                                                 <button type="submit" class="btn btn-sm btn-delete"
                                                     onclick="return confirm('¿Estás seguro de que deseas eliminar este producto?');">
                                                     <i class="bi bi-trash3"></i> Eliminar
