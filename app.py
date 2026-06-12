@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # Conexión a MongoDB
 try:
-    client = MongoClient('mongodb+srv://lucianolabbepineiro6_db_user:<db_password>@cluster0.gzibnvj.mongodb.net/?appName=Cluster0')
+    client = MongoClient('mongodb+srv://lucianolabbepineiro6_db_user:Inacap2026@cluster0.gzibnvj.mongodb.net/?appName=Cluster0')
     db = client['mi_tienda']
     productos_collection = db['productos']
     print("✓ Conexión a MongoDB exitosa")
